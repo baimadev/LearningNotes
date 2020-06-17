@@ -4,6 +4,7 @@
 [Drag](#2)  
 [多触点Drag](#3)  
 [Fling](#4)  
+[ViewDragHelper](#6)  
 
 
 ```kotlin
@@ -237,7 +238,74 @@ override fun onTouchEvent(event: MotionEvent?): Boolean {
         }
     }
 ```
+<h3 id="6"></h3>
+##ViewDragHelper
+用于ViewGroup，可控制子view的滑动。  
 
+- 创建` mViewDragHelper = ViewDragHelper.create(this,mViewDragHelperCallBack)`
+- 拦截事件  
 
+```kotlin
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return mViewDragHelper.shouldInterceptTouchEvent(ev!!)
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        mViewDragHelper.processTouchEvent(event!!)
+        return true
+    }
+```
+- 重写onComputeScroll
+
+```kotlin
+     override fun computeScroll() {
+               if(mViewDragHelper.continueSettling(true)) ViewCompat.postInvalidateOnAnimation(this)
+    }
+
+```
+- 处理回调CallBack
+
+```kotlin
+ mViewDragHelperCallBack=object : ViewDragHelper.Callback() {
+            //何时开始检测触摸事件
+            override fun tryCaptureView(child: View, pointerId: Int): Boolean {
+                return true
+            }
+
+            /**
+             * @param child Child view being dragged
+             * @param top 尝试在垂直方向上移动的距离
+             * @param dy Proposed change in position for top
+             * @return 需要移动的距离
+             */
+            override fun clampViewPositionVertical(child: View, top: Int, dy: Int): Int {
+                return top
+            }
+
+            //拖动结束后调用
+            override fun onViewReleased(releasedChild: View, xvel: Float, yvel: Float) {
+                super.onViewReleased(releasedChild, xvel, yvel)
+            }
+            //用户触摸view后调用
+            override fun onViewCaptured(capturedChild: View, activePointerId: Int) {
+                super.onViewCaptured(capturedChild, activePointerId)
+            }
+            //拖拽状态改变，如idle，dragging
+            override fun onViewDragStateChanged(state: Int) {
+                super.onViewDragStateChanged(state)
+            }
+            //位置改变时回调
+            override fun onViewPositionChanged(
+                changedView: View,
+                left: Int,
+                top: Int,
+                dx: Int,
+                dy: Int
+            ) {
+                super.onViewPositionChanged(changedView, left, top, dx, dy)
+            }
+        }
+
+```
 
 
