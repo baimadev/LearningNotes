@@ -19,3 +19,6 @@
 
 - Intent.FLAG\_ACTIVITY\_NO_HISTORY  
 A以这种方式启动B,B启动C,则B就会从栈中移除，变为AC。
+
+- Intent.FLAG\_ACTIVITY\_REORDER\_TO_FRONT  
+将指定的activity（若已存在），直接放到栈顶，不重新创建。

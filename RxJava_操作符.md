@@ -5,7 +5,8 @@
  [firstOrError](#2)   
  [just and fromCallable](#3)  
  [scan](#4)  
- [WithLatesFrom](#5)
+ [WithLatesFrom](#5)  
+ [filter](#6)
 
 <h3 id="1"></h3>
 
@@ -14,7 +15,7 @@
    `public final Observable<T> distinctUntilChanged()`  
      去掉重复的，只保留一个。
    
-   ![img](/Users/rupeng.sun/Library/Containers/com.tencent.WeWorkMac/Data/Library/Application Support/WXWork/Temp/ScreenCapture/企业微信截图_1e7f4b05-0a29-4e95-b78e-6c5819f5ad5c.png)
+   ![img](img/企业微信截图_1e7f4b05-0a29-4e95-b78e-6c5819f5ad5c.png)
    
  
    
@@ -25,8 +26,7 @@
 
 `public final Single<T> firstOrError()`  
 只发送第一个或者NoSuchElementException。
-   
-   ![as](/Users/rupeng.sun/Library/Containers/com.tencent.WeWorkMac/Data/Library/Application Support/WXWork/Temp/ScreenCapture/企业微信截图_8e0c024b-991e-483c-9631-6dc9417105d7.png)
+![as](img/企业微信截图_8e0c024b-991e-483c-9631-6dc9417105d7.png)
    
    
 <h3 id="3"></h3>
@@ -60,7 +60,7 @@
 ## scan
 
 `  public final <R> Observable<R> scan(final R initialValue, BiFunction<R, ? super T, R> accumulator)` 
-![](/Users/rupeng.sun/Library/Containers/com.tencent.WeWorkMac/Data/Library/Application Support/WXWork/Temp/ScreenCapture/企业微信截图_002b792b-06d7-483c-be7a-109ca39342c6.png)  
+![](img/企业微信截图_002b792b-06d7-483c-be7a-109ca39342c6.png)  
 可以拿到上次流的数据。
 
 
@@ -68,5 +68,8 @@
 ## WithLatesFrom
 
 
-![](/Users/rupeng.sun/Library/Containers/com.tencent.WeWorkMac/Data/Library/Application Support/WXWork/Temp/ScreenCapture/企业微信截图_12a675f3-3cd1-4496-a3d2-10f23acdb523.png)  
+![](img/企业微信截图_12a675f3-3cd1-4496-a3d2-10f23acdb523.png)  
 可以拿到两个流最近发射的数据。
+
+<h3 id="6"></h3>
+## filter
