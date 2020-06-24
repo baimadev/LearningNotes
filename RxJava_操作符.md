@@ -6,7 +6,8 @@
  [just and fromCallable](#3)  
  [scan](#4)  
  [WithLatesFrom](#5)  
- [filter](#6)
+ [filter](#6)  
+ [blockingGet](#7)
 
 <h3 id="1"></h3>
 
@@ -73,3 +74,9 @@
 
 <h3 id="6"></h3>
 ## filter
+![](img/企业微信截图_2c8c1a8d-30a5-4c16-948e-56cdf3995f7b.png)
+为true则发送，false过滤掉。
+
+<h3 id="7"></h3>
+## blockingGet
+以阻塞的方式等待获得success value或者an exception，不用再订阅。
