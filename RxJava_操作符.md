@@ -7,8 +7,9 @@
  [scan](#4)  
  [WithLatesFrom](#5)  
  [filter](#6)  
- [blockingGet](#7)
- [andThen](#8)
+ [blockingGet](#7)  
+ [andThen](#8)  
+ [switchMap](#9)  
 
 <h3 id="1"></h3>
 
@@ -90,6 +91,14 @@
 <h3 id="8"></h3>
 
 ## andThen
-订阅此Completable，如果上游没有错误，则将输入的参数singleSource发送到下游；上游有错误，则将错误事件发送到下游，并且跳过Single的订阅。
+订阅此Completable，如果上游没有错误，则将输入的参数singleSource发送到下游；上游有错误，则将错误事件发送到下游，并且跳过Single的订阅。  
+![](https://github.com/baimadev/LearningNotes/blob/master/img/andThen.png?raw=true)
+
+<h3 id="9"></h3>
+
+## switchMap
+switch()和flatMap()很像，除了一点:当源Observable发射一个新的数据项时，如果旧数据项订阅还未完成，就取消旧订阅数据和停止监视那个数据项产生的Observable,开始监视新的数据项.  
+![](https://github.com/baimadev/LearningNotes/blob/master/img/switchMap.png?raw=true)
+
 
 
