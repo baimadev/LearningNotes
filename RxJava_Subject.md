@@ -2,7 +2,10 @@
 #Subject
 既是 Observable 又是 Observer(Subscriber)。
 
-[AsyncSubject](#1) 
+[AsyncSubject](#1)  
+[BehaviorSubject](#2)   
+[ReplaySubject](#3)  
+[PublishSubject](#4)    
 <h3 id="1"></h3>
 
 ##AsyncSubject
@@ -37,10 +40,11 @@ Observer会接收AsyncSubject的onComplete()之前的最后一个数据。
         
         输出结果：      
        asyncSubject:asyncSubject4  
-	   asyncSubject:complete
-        
+	   asyncSubject:complete  
+      
 ```
 
+<h3 id="2"></h3>
 ##BehaviorSubject
 Observer会接收到BehaviorSubject被订阅之前的最后一个数据，再接收订阅之后发射过来的数据。如果BehaviorSubject被订阅之前没有发送任何数据，则会发送一个默认数据。
 
@@ -75,6 +79,7 @@ behaviorSubject:behaviorSubject4
         
 ```
 
+<h3 id="3"></h3>
 ##RePlaySubject
 ReplaySubject会发射所有来自原始Observable的数据给观察者，无论它们是何时订阅的。
 
@@ -143,6 +148,7 @@ replaySubject:replaySubject3
 replaySubject:replaySubject4
 ```
 
+<h3 id="4"></h3>
 ##PublishSubject
 Observer只接收PublishSubject被订阅之后发送的数据。
 
@@ -178,4 +184,8 @@ publicSubject:publicSubject4
 publicSubject:complete
 
 ```
+
+<h3 id="5"></h3>
+##toSerialized
+串行发送，使线程安全。
 
