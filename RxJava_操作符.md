@@ -1,7 +1,8 @@
 
 #RxJava
 
-[distinctUntilChanged](#1)  
+ [distinct](#1)  
+ [distinctUntilChanged](#12)  
  [firstOrError](#2)   
  [just and fromCallable](#3)  
  [scan](#4)  
@@ -13,7 +14,7 @@
 
 <h3 id="1"></h3>
 
-## distinctUntilChanged
+## distinct
 
    `public final Observable<T> distinctUntilChanged()`  
      去掉重复的，只保留一个。
@@ -21,7 +22,12 @@
    ![img](https://github.com/baimadev/LearningNotes/blob/master/img/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_1e7f4b05-0a29-4e95-b78e-6c5819f5ad5c.png?raw=true)
    
  
-   
+    
+<h3 id="12"></h3>
+
+## distinctUntilChanged
+只有当我们观察的数据状态发生改变的时候才会释放数据，需要注意的是，它只会对前后两次释放的数据进行比较。  
+![](https://github.com/baimadev/LearningNotes/blob/master/img/distinctUntilChanged.png?raw=true)
    
 <h3 id="2"></h3>
 
