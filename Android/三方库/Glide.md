@@ -230,6 +230,8 @@ Glide.with(this)
 ##Generated API
 ###自定义模块
 
+原理：创建Glide实例时，通过反射去创建MyAppGlideModule，再调用applyOptions、registerComponents。
+
 ```java
 
 @GlideModule
