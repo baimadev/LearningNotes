@@ -28,3 +28,25 @@ android{
 
 ## 库项目单独发布
 
+
+### 发布构件
+
+```java
+
+
+task publish(type:Jar)
+
+artifacts {
+    archives publish
+
+}
+
+uploadArchives{
+    repositories {
+        flatDir {
+            name 'libs'
+            dirs "$projectDir/libs"
+        }
+    }
+}
+```

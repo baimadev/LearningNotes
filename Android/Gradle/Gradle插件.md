@@ -46,27 +46,6 @@ sourceSets{
 - libsDir 存放生成的类库目录
 - distsDir 存放生成的发布的文件的目录
 
-### 发布构件
-
-```java
-
-
-task publish(type:Jar)
-
-artifacts {
-    archives publish
-
-}
-
-uploadArchives{
-    repositories {
-        flatDir {
-            name 'libs'
-            dirs "$projectDir/libs"
-        }
-    }
-}
-```
 
 
 ### 其他
@@ -311,3 +290,35 @@ installOptions有l、r、t、s、d、g六个选项。
         resConfig 'zh' //打包中文资源
     }
 ```
+
+### 2.12 ProductFlavor的维度（dimension）
+
+```java
+  //声明维度，顺序是优先级大小。这里声明两个维度abi（框架）和version
+  flavorDimensions "abi","version"
+  productFlavors{
+        baidu{
+            dimension "abi"
+            manifestPlaceholders.put("ZW","baidu")
+            buildConfigField 'String','url','"baiduurl"'
+            resValue 'string','channel_tip','百度渠道'
+            resValue 'bool','channelB','true'
+        }
+        google{
+            dimension "abi"
+            manifestPlaceholders.put("ZW","google")
+            buildConfigField 'String','url','"googleUrl"'
+            resValue 'string','channel_tip','谷歌渠道'
+            resValue 'bool','channelB','false'
+        }
+
+        paid{
+            dimension "version"
+        }
+    }
+
+```
+
+最终Android Gradle会替我们生成 baiduPaid+BuildType和googlePaid+BuildType。可以将BuildType也理解成优先级最低的维度。Android Gradle最终生成 维度1+维度2+...+BuildType  
+
+每一个BuildType、Flavor都有对应的目录，src/main/java  src/debug
