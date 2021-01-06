@@ -1,3 +1,9 @@
+# 前言
+基于事件流的链式调用。  
+任何操作都可以看成一条流。例如基本的网络请求操作：用户点击 -> 请求网络 -> 切换线程 -> 处理数据 -> view展示  
+优点：避免了回调地狱、切换线程方便、流式处理逻辑更加清楚、有很多的强大的操作符使用  
+
+
 
 #RxJava
 
@@ -11,6 +17,14 @@
  [blockingGet](#7)  
  [andThen](#8)  
  [switchMap](#9)  
+
+## subscribeOn ObserveOn
+Rxjava 提供了subscribeOn()方法来用于每个observable对象的操作符在哪个线程上运行。一般用来指定创建事件流的线程，也会影响其他操作符的执行线程。
+
+Rxjava 提供了ObserveOn()方法来用于每Subscriber(Observer)对象的操作符在哪个线程上运行。
+
+线程切换的时候subscribeOn()只被执行一次。如果出现多次，那么以第一次出现是用的那个线程为准。observeOn()改变调用它之后代码的线程。   
+
 
 <h3 id="1"></h3>
 
