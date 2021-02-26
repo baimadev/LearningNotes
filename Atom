@@ -1,11 +1,13 @@
 
 
 ## 常用快捷键
-- ctrl+ t Atom对象项目进行了索引，使用ctrl+t可以对项目中的文件进行模糊查找
+- window+ t Atom对象项目进行了索引，使用ctrl+t可以对项目中的文件进行模糊查找
 
-- 显示项目树(可切换) ctrl+ \
+- 显示项目树(可切换) window+ \
 
-- 打开命令输入框 ctrl + shift + p
+- 打开命令输入框 window + shift + p
+
+- ctrl+shift+m 预览markdown
 
 ## 命令框
 
