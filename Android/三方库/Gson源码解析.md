@@ -1,257 +1,240 @@
-# Gson
-
-## 1.0 基本使用
+#Gson源码解析（一）
 
 ```kotlin
+val jsonArray = "[{'name': 'Alex','id': 1}, {'name': 'Brian','id':2}, {'name': 'Charles','id': 3}]"
+val userArray = gson.fromJson(jsonArray,Array<User>::class.java)
 
-package com.baima.jetpack
-
-import android.app.Activity
-import android.content.Intent
-import android.content.Intent.CATEGORY_DEFAULT
-import android.os.Build
-import android.os.Bundle
-import android.util.JsonReader
-import android.util.JsonToken
-import android.util.Log
-import androidx.annotation.RequiresApi
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
-import kotlinx.android.synthetic.main.activity_main.*
-import java.io.StringReader
-
-class MainActivity : Activity() {
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        button1.setOnClickListener {
-            val pushIntent = Intent()
-            pushIntent.addCategory(CATEGORY_DEFAULT)
-            pushIntent.setAction("com.baima.service")
-            startActivity(pushIntent)
-        }
-
-        //Object 2 Json
-        val employee = Employee(1,"xia","rupeng","xrpcdut@163")
-        val gson = GsonBuilder().setPrettyPrinting().create()
-        val jsonString = gson.toJson(employee)
-        Log.e("xia",jsonString)
-
-        //Json 2 Object
-        val jsonEmployee = "{\"email\":\"xrpcdut@163\",\"firstName\":\"xia\",\"id\":1,\"last\":\"rupeng\"}"
-        val employee1 = gson.fromJson(jsonEmployee,Employee::class.java)
-        Log.e("xia",employee1.toString())
-
-        //Json Array 2 Object[]
-        val jsonArray = "[{'name': 'Alex','id': 1}, {'name': 'Brian','id':2}, {'name': 'Charles','id': 3}]"
-        val userArray = gson.fromJson(jsonArray,Array<User>::class.java)
-        for (user in userArray) {
-            Log.e("xia",user.toString())
-        }
-
-        //Json Array 2 ArrayList<Object>
-        val userListType = object : TypeToken<ArrayList<User>>() {}.type
-        val list = gson.fromJson<ArrayList<User>>(jsonArray,userListType)
-        for (user in list) {
-            Log.e("xia",user.toString())
-        }
-
-        val departmentJson = ("{'id' : 1, "
-                + "'name': 'HR',"
-                + "'users' : ["
-                + "{'name': 'Alex','id': 1}, "
-                + "{'name': 'Brian','id':2}, "
-                + "{'name': 'Charles','id': 3}]}")
-        val deparment = gson.fromJson(departmentJson,Deparment::class.java)
-        Log.e("xia",deparment.toString())
-
-	}
-}
-
-data class Employee(val id: Int, val firstName: String, val last: String, val email: String) {}
+...
 
 data class User(val id: Long, val name: String)
 
-data class Deparment(val id:Long,val name:String,val users:List<User>)
+```
+我们从fromJson开始。
+
+```java
+public <T> T fromJson(String json, Class<T> classOfT) throws JsonSyntaxException {
+  Object object = fromJson(json, (Type) classOfT);
+  return Primitives.wrap(classOfT).cast(object);
+}
 ```
 
-### 1.1 JsonReader
+经过几个fromJson重载方法后，会将我们传入的json一步步封装 String -> StringReader -> JsonReader；将传入的类类型Class<T>变为Type。
 
-- JsonReader是流式JSON解析器，也是pull parser的示例。pull parser解析JSON令牌并将其推送到事件处理程序中。
-- 它有助于读取JSON（RFC 7159）编码值作为令牌流。
-- 它读取字面值（字符串，数字，布尔值和null）以及对象和数组的开始和结束定界符。
-- 令牌以深度优先顺序遍历，与JSON文档中出现的顺序相同。
+Note：JsonReader是流式JSON解析器。它读取文字值（字符串，数字，布尔值和空值）以及对象和数组的开始和结束分隔符，并将他们以令牌流的形式推送。
 
-### 1.1.1 示例
+```java
+public <T> T fromJson(JsonReader reader, Type typeOfT) throws JsonIOException, JsonSyntaxException {
+  boolean isEmpty = true;
+  boolean oldLenient = reader.isLenient();
+  reader.setLenient(true);
+  try {
+    reader.peek();
+    isEmpty = false;
+    TypeToken<T> typeToken = (TypeToken<T>) TypeToken.get(typeOfT);
+    TypeAdapter<T> typeAdapter = getAdapter(typeToken);
+    T object = typeAdapter.read(reader);
+    return object;
 
-```kotlin
-
-        val json = "{'id': 1001,'firstName': 'Lokesh','lastName': 'Gupta','email': null}"
-        val jsonReader = JsonReader(StringReader(json))
-        jsonReader.isLenient = true
-        while (jsonReader.hasNext()){
-            val nextToken = jsonReader.peek()
-            if(JsonToken.BEGIN_OBJECT.equals(nextToken)){
-                jsonReader.beginObject()
-            }else if(JsonToken.NAME.equals(nextToken)){
-                val name = jsonReader.nextName()
-                Log.e("xia","Token Key >>>>  $name")
-            }else if(JsonToken.STRING.equals(nextToken)){
-                val str = jsonReader.nextString()
-                Log.e("xia","Token Value >>>>  $str")
-            }else if(JsonToken.NUMBER.equals(nextToken)){
-                val number = jsonReader.nextLong()
-                Log.e("xia","Token Value >>>>  $number")
-            }else if(JsonToken.NULL.equals(nextToken)){
-                jsonReader.nextNull()
-                Log.e("xia","Token Value >>>>  null")
-            }else if(JsonToken.END_OBJECT.equals(nextToken)){
-                jsonReader.endObject()
-            }
-        }
-
+  ...
+  //省略非关键代码
+}
 ```
 
-- JsonReader 深度优先遍历 与Json出现顺序相同
-- 使用beginArray（）和endArray（）方法检查数组的左括号和右括号“ [”和“]”。使用beginObject（）和endObject（）方法检查对象的左括号和右括号“ {”和“}”。
-- 当遇到未知名称时，严格的解析器应该失败，并带有异常。宽大的解析器应调用skipValue（）以递归地跳过该值的嵌套令牌，否则可能会发生冲突。
+Note：这里的TypeToken类是用来在**运行时获取泛型参数的具体类型**的工具类。有兴趣的可以去了解下。
+
+可以看到最终是通过TypeAdapter.read方法来解析json。TypeAdapter从何而来？我们进入`getAdapter(TypeToken<T> type)`方法看看。
 
 
-### 1.2 JsonParser
+```java
 
-#### 1.2.1 转化Json
+public <T> TypeAdapter<T> getAdapter(TypeToken<T> type) {
 
-JsonParser类提供3种方法来提供JSON作为源并将其解析为JsonElements树。
+   //1.尝试从typeTokenCache缓存里获取TypeAdapter
+   TypeAdapter<?> cached = typeTokenCache.get(type == null ? NULL_KEY_SURROGATE : type);
+   if (cached != null) {
+     return (TypeAdapter<T>) cached;
+   }
 
-- JsonElement parse（JsonReader json）–使用JsonReader读取JSON作为令牌流，并从JSON流中返回下一个值作为分析树。
-- JsonElement parse（java.io.Reader json）–使用指定的阅读器读取JSON并将JSON字符串解析为解析树。
-- JsonElement parse（java.lang.String json）–将指定的JSON字符串解析为解析树。
+   Map<TypeToken<?>, FutureTypeAdapter<?>> threadCalls = calls.get();
+   boolean requiresThreadLocalCleanup = false;
+   if (threadCalls == null) {
+     threadCalls = new HashMap<TypeToken<?>, FutureTypeAdapter<?>>();
+     calls.set(threadCalls);
+     requiresThreadLocalCleanup = true;
+   }
+   
+   //2.尝试从threadCalls缓存中获取TypeAdapter
+   FutureTypeAdapter<T> ongoingCall = (FutureTypeAdapter<T>) threadCalls.get(type);
+   if (ongoingCall != null) {
+     return ongoingCall;
+   }
 
-如果指定的文本不是有效的JSON，则这三个方法都将抛出JsonParseException和JsonSyntaxException。
+   //3.两个缓存中都没有的话就创建一个
+   try {
+     FutureTypeAdapter<T> call = new FutureTypeAdapter<T>();
+     threadCalls.put(type, call);
 
-#### 1.2.2  JsonElement, JsonObject 和JsonArray
-在JsonElement树中解析了JSON字符串后，我们就可以使用它的各种方法来访问JSON数据元素。
+     for (TypeAdapterFactory factory : factories) {
+       TypeAdapter<T> candidate = factory.create(this, type);
+       if (candidate != null) {
+         //存入缓存中（threadCalls和typeTokenCache）
+         call.setDelegate(candidate);
+         typeTokenCache.put(type, candidate);
+         return candidate;
+       }
+     }
+     throw new IllegalArgumentException("GSON (" + GsonBuildConfig.VERSION + ") cannot handle " + type);
+   } finally {
+     threadCalls.remove(type);
 
-例如，使用一种类型检查方法找出它代表什么类型的JSON元素：
-
-```kotlin
-jsonElement.isJsonObject();
-jsonElement.isJsonArray();
-jsonElement.isJsonNull();
-jsonElement.isJsonPrimitive();
+     if (requiresThreadLocalCleanup) {
+       calls.remove();
+     }
+   }
+ }
 ```
+1.getAdapter方法首先从Gson的成员变量`Map<TypeToken<?>, TypeAdapter<?>> typeTokenCache `中查找TypeAdapter；  
+2.然后在从threadCalls缓存中查找TypeAdapter，threadCalls使用了ThreadLocal存储缓存。  
+`calls  = new ThreadLocal<Map<TypeToken<?>, FutureTypeAdapter<?>>>();`   
+threadlocal是一个线程内部的存储类，可以在指定线程内存储数据，数据存储以后，只有指定线程可以得到存储数据。 
+3.缓存中都没有的话就根据type创建一个TypeAdapter。
 
-我们可以使用相应的方法将JsonElement转换为JsonObject和JsonArray：
+这里使用了两个缓存，一个存储在Gson实例的局部变量里，一个存储在线程的局部变量里。这样不管是使用同一个Gson实例解析json，还是在同一线程下使用不同Gson实例解析json都可以高效的获得TypeAdapter。
 
-```kotlin
-JsonObject jsonObject = jsonElement.getAsJsonObject();
-JsonArray jsonArray = jsonElement.getAsJsonArray();
+接下来我们来看看factories是怎样创建TypeAdapter的。
+
+factories是在Gson的构造器里初始化的。
+
+```java
+Gson(...) {
+     ...
+
+   List<TypeAdapterFactory> factories = new ArrayList<TypeAdapterFactory>();
+
+   // built-in type adapters that cannot be overridden
+   factories.add(TypeAdapters.JSON_ELEMENT_FACTORY);
+   factories.add(ObjectTypeAdapter.FACTORY);
+
+   // the excluder must precede all adapters that handle user-defined types
+   factories.add(excluder);
+
+   // users' type adapters
+   factories.addAll(factoriesToBeAdded);
+
+   // type adapters for basic platform types
+   factories.add(TypeAdapters.STRING_FACTORY);
+   factories.add(TypeAdapters.INTEGER_FACTORY);
+   factories.add(TypeAdapters.BOOLEAN_FACTORY);
+   factories.add(TypeAdapters.BYTE_FACTORY);
+   factories.add(TypeAdapters.SHORT_FACTORY);
+   TypeAdapter<Number> longAdapter = longAdapter(longSerializationPolicy);
+   factories.add(TypeAdapters.newFactory(long.class, Long.class, longAdapter));
+   factories.add(TypeAdapters.newFactory(double.class, Double.class,
+           doubleAdapter(serializeSpecialFloatingPointValues)));
+   factories.add(TypeAdapters.newFactory(float.class, Float.class,
+           floatAdapter(serializeSpecialFloatingPointValues)));
+   factories.add(TypeAdapters.NUMBER_FACTORY);
+   factories.add(TypeAdapters.ATOMIC_INTEGER_FACTORY);
+   factories.add(TypeAdapters.ATOMIC_BOOLEAN_FACTORY);
+   factories.add(TypeAdapters.newFactory(AtomicLong.class, atomicLongAdapter(longAdapter)));
+   factories.add(TypeAdapters.newFactory(AtomicLongArray.class, atomicLongArrayAdapter(longAdapter)));
+   factories.add(TypeAdapters.ATOMIC_INTEGER_ARRAY_FACTORY);
+   factories.add(TypeAdapters.CHARACTER_FACTORY);
+   factories.add(TypeAdapters.STRING_BUILDER_FACTORY);
+   factories.add(TypeAdapters.STRING_BUFFER_FACTORY);
+   factories.add(TypeAdapters.newFactory(BigDecimal.class, TypeAdapters.BIG_DECIMAL));
+   factories.add(TypeAdapters.newFactory(BigInteger.class, TypeAdapters.BIG_INTEGER));
+   factories.add(TypeAdapters.URL_FACTORY);
+   factories.add(TypeAdapters.URI_FACTORY);
+   factories.add(TypeAdapters.UUID_FACTORY);
+   factories.add(TypeAdapters.CURRENCY_FACTORY);
+   factories.add(TypeAdapters.LOCALE_FACTORY);
+   factories.add(TypeAdapters.INET_ADDRESS_FACTORY);
+   factories.add(TypeAdapters.BIT_SET_FACTORY);
+   factories.add(DateTypeAdapter.FACTORY);
+   factories.add(TypeAdapters.CALENDAR_FACTORY);
+   factories.add(TimeTypeAdapter.FACTORY);
+   factories.add(SqlDateTypeAdapter.FACTORY);
+   factories.add(TypeAdapters.TIMESTAMP_FACTORY);
+   factories.add(ArrayTypeAdapter.FACTORY);
+   factories.add(TypeAdapters.CLASS_FACTORY);
+
+   // type adapters for composite and user-defined types
+   factories.add(new CollectionTypeAdapterFactory(constructorConstructor));
+   factories.add(new MapTypeAdapterFactory(constructorConstructor, complexMapKeySerialization));
+   this.jsonAdapterFactory = new JsonAdapterAnnotationTypeAdapterFactory(constructorConstructor);
+   factories.add(jsonAdapterFactory);
+   factories.add(TypeAdapters.ENUM_FACTORY);
+   factories.add(new ReflectiveTypeAdapterFactory(
+       constructorConstructor, fieldNamingStrategy, excluder, jsonAdapterFactory));
+
+   this.factories = Collections.unmodifiableList(factories);
+ }
+
 ```
-一旦有了JsonObject或JsonArray实例，就可以使用其get()方法从中提取字段。
+可以看到factories是一个ArrayList,其存储类型是TypeAdapterFactory,并在初始化的时候添加了各种类型的TypeAdapterFactory。
 
-#### 1.2.3 使用示例
-
-```kotlin 
-        val jsonString = ("{'id': 1001, "
-                + "'firstName': 'Lokesh',"
-                + "'lastName': 'Gupta',"
-                + "'email': 'howtodoinjava@gmail.com'}")
-        
-        val jsonElement = JsonParser.parseString(json)
-        val jsonObject = jsonElement.asJsonObject
-
-        println(jsonObject.get("id"))
-        println(jsonObject["firstName"])
-        println(jsonObject["lastName"])
-        println(jsonObject["email"])
-
-```
-
-### 1.3 自定义序列化、反序列化
-
-#### 1.3.1 自定义序列化
-
-```kotlin
-class BooleanSerializer :JsonSerializer<Boolean>{
-    override fun serialize(
-        src: Boolean?,
-        typeOfSrc: Type?,
-        context: JsonSerializationContext?
-    ): JsonElement {
-        src?.let {
-            return if (src) {
-                JsonPrimitive(1)
-            } else {
-                JsonPrimitive(0)
-            }
-        }
-        return JsonPrimitive(0)
-    }
+```java
+public interface TypeAdapterFactory {
+  <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type);
 }
 
-...
-  val user1 = User1(100L, "json", true)
-        val gson1 = GsonBuilder()
-            .registerTypeAdapter(object : TypeToken<Boolean>() {}.type, BooleanSerializer())
-            .setPrettyPrinting()
-            .create()
-        Log.e("xia", gson1.toJson(user1))
-
-...
-
-	{
-      "active": 1,
-      "id": 100,
-      "name": "json"
-    }
-
 ```
 
-#### 1.3.1 自定义反列化
+Gson中其实充斥了大量的TypeAdapterFactory,包基本类型的、用户自定义的等等。
 
-```kotlin
-data class Employee1(val id: Int, val firstName: String, val lastName: String, val email: String,val localDa:LocalDate)
+我们先看下基本类型的TypeAdapters.STRING_FACTORY。
 
-class EmployeeDeserializer :JsonDeserializer<Employee1>{
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun deserialize(
-        json: JsonElement?,
-        typeOfT: Type?,
-        context: JsonDeserializationContext?
-    ): Employee1 {
-        val jsonObject = json!!.asJsonObject
-        val localDate = LocalDate.of(
-            jsonObject.get("year").asInt,
-            jsonObject.get("month").asInt,
-            jsonObject.get("day").asInt
-        )
-        return Employee1(
-            jsonObject.get("id").asInt,
-            jsonObject.get("firstName").asString,
-            jsonObject.get("lastName").asString,
-            jsonObject.get("email").asString,
-            localDate
-        )
+```java
+  public static final TypeAdapterFactory STRING_FACTORY = newFactory(String.class, STRING);
+
+  public static <TT> TypeAdapterFactory newFactory(
+    final Class<TT> type, final TypeAdapter<TT> typeAdapter) {
+  return new TypeAdapterFactory() {
+    
+    @Override public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+      return typeToken.getRawType() == type ? (TypeAdapter<T>) typeAdapter : null;
     }
+    ...
+    //省略非关键代码
+  };
 }
 
-...
-
- val json2 = ("{'id': 1001,"
-                + "'firstName': 'Lokesh',"
-                + "'lastName': 'Gupta',"
-                + "'email': 'howtodoinjava@gmail.com', "
-                + "'day': 11, "
-                + "'month': 8, "
-                + "'year': 2019}")
-
-        val gson2 = GsonBuilder()
-            .registerTypeAdapter(Employee1::class.java, EmployeeDeserializer())
-            .create()
-        val employee2 = gson2.fromJson(json2, Employee1::class.java)
-        Log.e("xia",employee2.toString())
+public static final TypeAdapter<String> STRING = new TypeAdapter<String>() {
+  @Override
+  public String read(JsonReader in) throws IOException {
+    JsonToken peek = in.peek();
+    if (peek == JsonToken.NULL) {
+      in.nextNull();
+      return null;
+    }
+    /* coerce booleans to strings for backwards compatibility */
+    if (peek == JsonToken.BOOLEAN) {
+      return Boolean.toString(in.nextBoolean());
+    }
+    return in.nextString();
+  }
+  @Override
+  public void write(JsonWriter out, String value) throws IOException {
+    out.value(value);
+  }
+};
 
 ```
+
+如果解析一个String类型的数据，大概的逻辑会是这样的：  
+Gson初始化时通过newFactory方法将String类型的TypeAdapter包装成TypeAdapterFactory，然后开始解析时会在上文的提到的 `getAdaapter()`中获取该TypeAdapterFactory，在调用create方法得到String类型的TypeAdapter，最后调用TypeAdapter的read方法将json转化为String。好像有哪里不对劲。。。   
+为什么不直接去查找TypeAdapter了？为什么中间要加个TypeAdapterFactory了？这不是脱裤子放屁吗？好问题，我现在也不知道，欲知后事如何，请看下回分解。
+
+看到这里我们终于看到了read方法了，TypeAdapter的read方法作用就是将Json转化为Java Object；write方法时将Java Object转化为Json。但是我们使用Gson时传入的是JavaBean，不是基本类型，这时该怎么获取TypeAdapter去解析json了？
+
+### ReflectiveTypeAdapterFactory
+
+在gson初始化时我们可以看到它添加了一个  
+`   factories.add(new ReflectiveTypeAdapterFactory(
+       constructorConstructor, fieldNamingStrategy, excluder, jsonAdapterFactory));
+`  
+看名字我们应该也可以猜出来这个Factory的作用，没错，它可以根据用户传入的类型，通过反射创建出该类型的实例。
+test
+
+
