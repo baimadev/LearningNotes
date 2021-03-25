@@ -1,11 +1,15 @@
 # RecyclerView缓存机制
-一直对RecyclerView的复用机制很模糊，所以拉通整理了下，记录下相关的知识点。    
-按照一般的说法，可认为RecyclerView有四级缓存。
 
- - Scrap
- - mCachedViews
- - mViewCacheExtension
- - mRecyclerPool
+
+RecyclerView之所以能滚动，就是因为它在监听到手指滑动之后，不断地更新Item的位置，也就是反复layout子View了，这部分工作由LayoutManager负责。
+
+- mAttachedScrap：LayoutManager每次layout子View之前，那些已经添加到RecyclerView中的Item以及被删除的Item的临时存放地。使用场景就是RecyclerView滚动时、还有在可见范围内删除Item后用notifyItemRemoved方法通知更新时；
+
+- mChangedScrap：作用：存放可见范围内有更新的Item。使用场景：可见范围内的Item有更新，并且使用notifyItemChanged方法通知更新时；
+
+- mCachedViews：作用：存放滚动过程中没有被重新使用且状态无变化的那些旧Item。场景：滚动，prefetch；
+
+- RecycledViewPool：作用：缓存Item的最终站，用于保存那些Removed、Changed、以及mCachedViews满了之后更旧的Item。场景：Item被移除、Item有更新、滚动过程；
 
 ## Scrap
 Scrap 缓存列表（mChangedScrap、mAttachedScrap）是 RecyclerView 最先查找 ViewHolder 地方,其存在是为了预测动画效果。
