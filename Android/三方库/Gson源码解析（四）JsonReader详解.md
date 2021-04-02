@@ -1,5 +1,5 @@
 
-#Gson源码解析（二）反射机制详解
+#Gson源码解析（四）JsonReader详解
 
 接着上篇留下来的问题，Gson是怎么序列化我们自己创建的JavaBean对象？
 
