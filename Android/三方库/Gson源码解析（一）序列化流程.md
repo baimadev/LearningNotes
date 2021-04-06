@@ -244,8 +244,80 @@ data class User(val id: Long, val name: String)
 val type = object :TypeToken<List<User>>(){}.type
 //返回List类型
 val rawType = object :TypeToken<List<User>>(){}.rawType
+
 ```
-### 那么它的内部是怎么实现的了？
+
+
+
+
+### 疑惑
+大家都知道java的泛型擦除机制的存在，那么为什么Gson可以在运行时拿到具体的泛型类型了？
+
+```java
+List<String> l1 = new ArrayList<String>();
+List<Integer> l2 = new ArrayList<Integer>();
+		
+System.out.println(l1.getClass() == l2.getClass());
+```
+
+回想刚开始学java时看到的博客 “为了兼容jdk1.5之前的版本，java会在编译期擦除与泛型相关的信息。”  
+这句话是对的，但没有完全对，有被误导到...
+
+https://techblog.bozho.net/on-java-generics-and-erasure/  
+https://zhuanlan.zhihu.com/p/292983882  
+
+参考了上面两篇博客了解到编译期并不会完全擦除泛型信息：
+
+- 1、泛型不止在编译阶段生效，部分泛型可以在运行时通过反射获取；  
+- 2、java 语言尝试将所有能确定的泛型信息记录在类文件中。  
+
+
+### 未被擦除的泛型
+
+父类泛型、成员变量、方法入参和返回值使用到的泛型信息都会保留，并能在运行阶段获取。
+
+```java
+public static void main(String[] args) throws Exception {
+        // 获取父类泛型
+        System.out.println("GenericSuperclass:" + ((ParameterizedType) (Clazz.class.getGenericSuperclass())).getActualTypeArguments()[0]);
+        // 获取成员变量泛型
+        Field field = Clazz.class.getDeclaredField("field");
+        for (Type fieldType : ((ParameterizedType) (field.getGenericType())).getActualTypeArguments()) {
+            System.out.println("field:" + fieldType.getTypeName());
+        }
+        // 获取方法入参和返回值泛型
+        Method method = Clazz.class.getDeclaredMethod("function", List.class);
+        for (Type type : method.getGenericParameterTypes()) {
+            System.out.println("method param:" + ((ParameterizedType) type).getActualTypeArguments()[0]);
+        }
+        System.out.println("method return:" + ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0]);
+    }
+
+```
+
+### 参数化类型 ParameterizedType
+
+```java
+public interface ParameterizedType extends Type {
+
+    //返回确切的泛型参数, 如Map<String, Integer>返回[String, Integer]
+    Type[] getActualTypeArguments();
+
+    //返回当前class或interface声明的类型, 如List<?>返回List
+    Type getRawType();
+
+    //返回所属类型. 这主要是对嵌套定义的内部类而言的，例如于对Map.Entry<K,V>来说，调用getOwnerType方法返回的就是Map。
+    Type getOwnerType();
+}
+
+```
+
+
+### TypeToken的实现
+
+再回过头看一看TypeToken的实现就简单了。  
+
+
 
 ```java
 public class TypeToken<T> {
@@ -265,6 +337,13 @@ public class TypeToken<T> {
 }
 
 ```
+
+
+`val type = object :TypeToken<List<User>>(){}.type`  
+
+通过匿名类的形式创建实例，此时实例的父类型就是TypeToken\<List\<User\>\>。
+
+
 这个类的无参构造函数是protected，所以只能使用继承的方式去创建一个实例。构造函数第一行调用了getSuperclassTypeParameter，我们定位到此方法。
 
 ```java
@@ -278,40 +357,8 @@ public class TypeToken<T> {
     return $Gson$Types.canonicalize(parameterized.getActualTypeArguments()[0]);
   }
 ```
-关注getGenericSuperclass()这个方法，它可以返回直接继承的父类的参数化类型（包含泛型参数）。
 
-### 参数化类型 ParameterizedType
-
-```java
-public interface ParameterizedType extends Type {
-
-    //返回确切的泛型参数, 如Map<String, Integer>返回[String, Integer]
-    Type[] getActualTypeArguments();
-
-    //返回当前class或interface声明的类型, 如List<?>返回List
-    Type getRawType();
-
-    //返回所属类型. 这主要是对嵌套定义的内部类而言的，例如于对Map.Entry<K,V>来说，调用getOwnerType方法返回的就是Map。
-    Type getOwnerType();
-}
-
-```
-
-再回过头看一看TypeToken的使用。  
-
-`val type = object :TypeToken<List<User>>(){}.type`  
-
-通过匿名类的形式创建实例，此时实例的父类型就是TypeToken\<List\<User\>\>,所以在构造函数中调用getGenericSuperclass()便可以得到TypeToken\<List\<User\>\>的参数化类型，从而得到List\<User\>类型信息。
-
-#### 疑惑
-我们都知道java的泛型擦除机制的存在，那么为什么ParameterizedType可以获取泛型类型了?它是怎么去拿到这个类型信息的了？
-
-一开始我也想不明白为什么?后来再重新理解了下泛型原理，我就悟了。  
-
-泛型的本质是参数化类型，我们定义的类TypeToken\<T\>中的T只是一个形参，并不代表一种类型，我们创建的TypeToken\<List\<User\>\>也不是一种类型，只是向这个类的泛型参数传递了实参。他们运行时都只是TypeToken类型。类中所涉及到的变量，使用时会根据参数化类型信息去强转一次。
-
-
-
+调用getGenericSuperclass()便可以得到TypeToken\<List\<User\>\>的参数化类型，从而得到List\<User\>类型信息。
 
 
 
