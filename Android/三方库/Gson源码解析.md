@@ -3,14 +3,18 @@
 ## 我们从fromJson开始。
 
 ```java
-public <T> T fromJson(String json, Class<T> classOfT) throws JsonSyntaxException {
-  Object object = fromJson(json, (Type) classOfT);
-  return Primitives.wrap(classOfT).cast(object);
-}
+  public <T> T fromJson(String json, Type typeOfT) throws JsonSyntaxException {
+    if (json == null) {
+      return null;
+    }
+    StringReader reader = new StringReader(json);
+    T target = (T) fromJson(reader, typeOfT);
+    return target;
+  }
 ```
 
-经过几个fromJson重载方法后，会将我们传入的json一步步封装 String -> StringReader -> JsonReader；将传入的类类型Class<T>变为Type。
-
+经过几个fromJson重载方法后，会将我们传入的json一步步封装 String -> StringReader -> JsonReader。
+  
 Note：JsonReader是流式JSON解析器。它读取文字值（字符串，数字，布尔值和空值）以及对象和数组的开始和结束分隔符，并将他们以令牌流的形式推送。
 
 ```java
@@ -225,140 +229,9 @@ public static final TypeAdapter<String> STRING = new TypeAdapter<String>() {
 
 好像有哪里不对劲...  
 
-为什么不直接去查找TypeAdapter了？为什么中间要加个TypeAdapterFactory了？这不是脱裤子放屁吗？好问题，我现在也不知道，欲知后事如何，请看下回分解。
+为什么不直接去查找TypeAdapter了？为什么中间要加个TypeAdapterFactory了？
 
 看到这里我们终于看到了read方法了，TypeAdapter的read方法作用就是将Json转化为Java Object；write方法时将Java Object转化为Json。但是我们使用Gson时传入的是JavaBean，不是基本类型，这时该怎么获取TypeAdapter去解析json了？欲知后事如何，请看下回分解。
-
-
-
-<h3 id="1"></h3>
-
-## TypeToken
-
-TypeToken是用来获取泛型的参数类型的。
-
-```kotlin
-data class User(val id: Long, val name: String)
-...
-//返回List<User>类型
-val type = object :TypeToken<List<User>>(){}.type
-//返回List类型
-val rawType = object :TypeToken<List<User>>(){}.rawType
-
-```
-
-
-
-
-### 疑惑
-大家都知道java的泛型擦除机制的存在，那么为什么Gson可以在运行时拿到具体的泛型类型了？
-
-```java
-List<String> l1 = new ArrayList<String>();
-List<Integer> l2 = new ArrayList<Integer>();
-		
-System.out.println(l1.getClass() == l2.getClass());
-```
-
-回想刚开始学java时看到的博客 “为了兼容jdk1.5之前的版本，java会在编译期擦除与泛型相关的信息。”  
-这句话是对的，但没有完全对，有被误导到...
-
-https://techblog.bozho.net/on-java-generics-and-erasure/  
-https://zhuanlan.zhihu.com/p/292983882  
-
-参考了上面两篇博客了解到编译期并不会完全擦除泛型信息：
-
-- 1、泛型不止在编译阶段生效，部分泛型可以在运行时通过反射获取；  
-- 2、java 语言尝试将所有能确定的泛型信息记录在类文件中。  
-
-
-### 未被擦除的泛型
-
-父类泛型、成员变量、方法入参和返回值使用到的泛型信息都会保留，并能在运行阶段获取。
-
-```java
-public static void main(String[] args) throws Exception {
-        // 获取父类泛型
-        System.out.println("GenericSuperclass:" + ((ParameterizedType) (Clazz.class.getGenericSuperclass())).getActualTypeArguments()[0]);
-        // 获取成员变量泛型
-        Field field = Clazz.class.getDeclaredField("field");
-        for (Type fieldType : ((ParameterizedType) (field.getGenericType())).getActualTypeArguments()) {
-            System.out.println("field:" + fieldType.getTypeName());
-        }
-        // 获取方法入参和返回值泛型
-        Method method = Clazz.class.getDeclaredMethod("function", List.class);
-        for (Type type : method.getGenericParameterTypes()) {
-            System.out.println("method param:" + ((ParameterizedType) type).getActualTypeArguments()[0]);
-        }
-        System.out.println("method return:" + ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0]);
-    }
-
-```
-
-### 参数化类型 ParameterizedType
-
-```java
-public interface ParameterizedType extends Type {
-
-    //返回确切的泛型参数, 如Map<String, Integer>返回[String, Integer]
-    Type[] getActualTypeArguments();
-
-    //返回当前class或interface声明的类型, 如List<?>返回List
-    Type getRawType();
-
-    //返回所属类型. 这主要是对嵌套定义的内部类而言的，例如于对Map.Entry<K,V>来说，调用getOwnerType方法返回的就是Map。
-    Type getOwnerType();
-}
-
-```
-
-
-### TypeToken的实现
-
-再回过头看一看TypeToken的实现就简单了。  
-
-
-
-```java
-public class TypeToken<T> {
-  final Class<? super T> rawType;
-  final Type type;
-  final int hashCode;
-
-
-  @SuppressWarnings("unchecked")
-  protected TypeToken() {
-    this.type = getSuperclassTypeParameter(getClass());
-    this.rawType = (Class<? super T>) $Gson$Types.getRawType(type);
-    this.hashCode = type.hashCode();
-  }
-
-  ...
-}
-
-```
-
-
-`val type = object :TypeToken<List<User>>(){}.type`  
-
-通过匿名类的形式创建实例，此时实例的父类型就是TypeToken\<List\<User\>\>。
-
-
-这个类的无参构造函数是protected，所以只能使用继承的方式去创建一个实例。构造函数第一行调用了getSuperclassTypeParameter，我们定位到此方法。
-
-```java
-  static Type getSuperclassTypeParameter(Class<?> subclass) {
-    Type superclass = subclass.getGenericSuperclass();
-	 //如果返回的是Class类型则抛出错误
-    if (superclass instanceof Class) {
-      throw new RuntimeException("Missing type parameter.");
-    }
-    ParameterizedType parameterized = (ParameterizedType) superclass;
-    return $Gson$Types.canonicalize(parameterized.getActualTypeArguments()[0]);
-  }
-```
-
-调用getGenericSuperclass()便可以得到TypeToken\<List\<User\>\>的参数化类型，从而得到List\<User\>类型信息。
 
 
 
@@ -655,7 +528,7 @@ private ReflectiveTypeAdapterFactory.BoundField createBoundField(
     // special casing primitives here saves ~5% on Android...
     JsonAdapter annotation = field.getAnnotation(JsonAdapter.class);
     TypeAdapter<?> mapped = null;
-    //如果这个字段有使用到JsonAdapter注解，另外处理
+    //如果这个成员变量有使用到JsonAdapter注解，则用指定的Adapter
     if (annotation != null) {
       mapped = jsonAdapterFactory.getTypeAdapter(
           constructorConstructor, context, fieldType, annotation);
@@ -688,5 +561,134 @@ private ReflectiveTypeAdapterFactory.BoundField createBoundField(
 
 
 
+
+<h3 id="1"></h3>
+
+## TypeToken
+
+TypeToken是用来获取泛型的参数类型的。
+
+```kotlin
+data class User(val id: Long, val name: String)
+...
+//返回List<User>类型
+val type = object :TypeToken<List<User>>(){}.type
+//返回List类型
+val rawType = object :TypeToken<List<User>>(){}.rawType
+
+```
+
+
+
+
+### 疑惑
+大家都知道java的泛型擦除机制的存在，那么为什么Gson可以在运行时拿到具体的泛型类型了？
+
+```java
+List<String> l1 = new ArrayList<String>();
+List<Integer> l2 = new ArrayList<Integer>();
+		
+System.out.println(l1.getClass() == l2.getClass());
+```
+
+回想刚开始学java时看到的博客 “为了兼容jdk1.5之前的版本，java会在编译期擦除与泛型相关的信息。”  
+这句话是对的，但没有完全对，有被误导到...
+
+https://techblog.bozho.net/on-java-generics-and-erasure/  
+https://zhuanlan.zhihu.com/p/292983882  
+
+参考了上面两篇博客了解到编译期并不会完全擦除泛型信息：
+
+- 1、泛型不止在编译阶段生效，部分泛型可以在运行时通过反射获取；  
+- 2、java 语言尝试将所有能确定的泛型信息记录在类文件中。  
+
+
+### 未被擦除的泛型
+
+父类泛型、成员变量、方法入参和返回值使用到的泛型信息都会保留，并能在运行阶段获取。
+
+```java
+public static void main(String[] args) throws Exception {
+        // 获取父类泛型
+        System.out.println("GenericSuperclass:" + ((ParameterizedType) (Clazz.class.getGenericSuperclass())).getActualTypeArguments()[0]);
+        // 获取成员变量泛型
+        Field field = Clazz.class.getDeclaredField("field");
+        for (Type fieldType : ((ParameterizedType) (field.getGenericType())).getActualTypeArguments()) {
+            System.out.println("field:" + fieldType.getTypeName());
+        }
+        // 获取方法入参和返回值泛型
+        Method method = Clazz.class.getDeclaredMethod("function", List.class);
+        for (Type type : method.getGenericParameterTypes()) {
+            System.out.println("method param:" + ((ParameterizedType) type).getActualTypeArguments()[0]);
+        }
+        System.out.println("method return:" + ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0]);
+    }
+
+```
+
+### 参数化类型 ParameterizedType
+
+```java
+public interface ParameterizedType extends Type {
+
+    //返回确切的泛型参数, 如Map<String, Integer>返回[String, Integer]
+    Type[] getActualTypeArguments();
+
+    //返回当前class或interface声明的类型, 如List<?>返回List
+    Type getRawType();
+
+    //返回所属类型. 这主要是对嵌套定义的内部类而言的，例如于对Map.Entry<K,V>来说，调用getOwnerType方法返回的就是Map。
+    Type getOwnerType();
+}
+
+```
+
+
+### TypeToken的实现
+
+再回过头看一看TypeToken的实现就简单了。  
+
+
+
+```java
+public class TypeToken<T> {
+  final Class<? super T> rawType;
+  final Type type;
+  final int hashCode;
+
+
+  @SuppressWarnings("unchecked")
+  protected TypeToken() {
+    this.type = getSuperclassTypeParameter(getClass());
+    this.rawType = (Class<? super T>) $Gson$Types.getRawType(type);
+    this.hashCode = type.hashCode();
+  }
+
+  ...
+}
+
+```
+
+
+`val type = object :TypeToken<List<User>>(){}.type`  
+
+通过匿名类的形式创建实例，此时实例的父类型就是TypeToken\<List\<User\>\>。
+
+
+这个类的无参构造函数是protected，所以只能使用继承的方式去创建一个实例。构造函数第一行调用了getSuperclassTypeParameter，我们定位到此方法。
+
+```java
+  static Type getSuperclassTypeParameter(Class<?> subclass) {
+    Type superclass = subclass.getGenericSuperclass();
+	 //如果返回的是Class类型则抛出错误
+    if (superclass instanceof Class) {
+      throw new RuntimeException("Missing type parameter.");
+    }
+    ParameterizedType parameterized = (ParameterizedType) superclass;
+    return $Gson$Types.canonicalize(parameterized.getActualTypeArguments()[0]);
+  }
+```
+
+调用getGenericSuperclass()便可以得到TypeToken\<List\<User\>\>的参数化类型，从而得到User类型信息。
 
 
