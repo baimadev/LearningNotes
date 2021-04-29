@@ -2,7 +2,7 @@
 
 **优点：管理实例的生命周期，只能在对应的范围内进行使用。会自动释放不在使用的对象，减少资源的过度使用。**
 
-## 
+##
 
 ```java
 //project 的 build.gradle 添加以下依赖。
@@ -55,8 +55,6 @@ class MyApplication : Application() {
 }
 ```
 
-**这里的参数所依赖的类，也需要@Inject**
-
 ```kotlin
 class ServiceTest @Inject constructor(){
     fun hiltTest(){
@@ -64,7 +62,7 @@ class ServiceTest @Inject constructor(){
     }
 }
 ```
-### 使用 
+### 使用
 - 如果使用 @AndroidEntryPoint 注解 Android 类，还必须注解依赖他的 Android类，例如： 给 fragment 使用 @AndroidEntryPoint 后，则还需要给 fragmet 依赖的 Activity 依赖 @AndroidEntryPoint ，否则会出现异常
 
 - @AndroidEntryPoint 注解 仅仅支持 ComponentActivity 的子类，例如 AppCompatActivity ；Fragment：仅仅支持继承 androidx.Fragment 的 Fragment。
@@ -261,7 +259,7 @@ Hilt 提供了一些预定义限定符，例如你可能在不同的情况下需
 ### 组件作用域@scopes
 
 @scopes 的作用在指定作用域范围内(Application、Activity 等等) 提供相同的实例。
- 
+
 | Android class |Generated component| Scope|
 | ---- | ---- | ---- |
 |Application|ApplicationComponent|@Singleton|
@@ -271,4 +269,3 @@ Hilt 提供了一些预定义限定符，例如你可能在不同的情况下需
 |View|ViewComponent|@ViewScoped|
 |View annotated with@WithFragmentBindings|ViewWithFragmentComponent|@ViewScoped|
 |Service|ServiceComponent|@ServiceScoped|
-
