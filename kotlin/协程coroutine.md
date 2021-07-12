@@ -1,3 +1,16 @@
+## CoroutineScope
+
+Coroutine 在设计的时候，要求在一个范围（Scope）内执行，这样当这个 Scope 取消的时候，里面所有的子 Coroutine 也自动取消。
+
+```kotlin
+public interface CoroutineScope {
+    // Scope 的 Context
+    public val coroutineContext: CoroutineContext
+}
+```
+
+
+
 ## 通道
 通道提供了一种在流中传输值的方法。
 
@@ -103,7 +116,7 @@ fun main() = runBlocking {
 }
 ```
 管道中的元素将会交给不同的协程处理。
-  
+
 取消生产者协程将关闭它的通道，从而最终终止处理器协程正在执行的此通道上的迭代。
 
 ### 扇入
@@ -275,8 +288,8 @@ fun main() = runBlocking {
 当父协程的所有子协程都结束后，原始的异常才会被父协程处理， 见下面这个例子。
 
 ```kotlin
-val handler = CoroutineExceptionHandler { _, exception -> 
-    println("CoroutineExceptionHandler got $exception") 
+val handler = CoroutineExceptionHandler { _, exception ->
+    println("CoroutineExceptionHandler got $exception")
 }
 val job = GlobalScope.launch(handler) {
     launch { // 第一个子协程
@@ -405,12 +418,12 @@ Caught an assertion error
 
 ### 监督协程中的异常
 
-监督协程中的每一个子作业应该通过异常处理机制处理自身的异常。 这种差异来自于子作业的执行失败不会传播给它的父作业的事实。 这意味着在 supervisorScope 内部直接启动的协程确实使用了设置在它们作用域内的 CoroutineExceptionHandler，与父协程的方式相同。 
+监督协程中的每一个子作业应该通过异常处理机制处理自身的异常。 这种差异来自于子作业的执行失败不会传播给它的父作业的事实。 这意味着在 supervisorScope 内部直接启动的协程确实使用了设置在它们作用域内的 CoroutineExceptionHandler，与父协程的方式相同。
 
 ```kotlin
 fun main() = runBlocking {
-    val handler = CoroutineExceptionHandler { _, exception -> 
-        println("CoroutineExceptionHandler got $exception") 
+    val handler = CoroutineExceptionHandler { _, exception ->
+        println("CoroutineExceptionHandler got $exception")
     }
     supervisorScope {
         val child = launch(handler) {
@@ -428,4 +441,3 @@ The scope is completing
 The child throws an exception  
 CoroutineExceptionHandler got java.lang.AssertionError  
 The scope is completed  
-
