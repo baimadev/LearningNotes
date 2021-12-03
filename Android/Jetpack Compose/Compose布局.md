@@ -171,7 +171,6 @@ val guideline = createGuidelineFromStart(fraction = 0.5f)
 ```
 
 (5)、限置宽高
-
 ```kotlin
    Text(" LONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONGLONG",
                 modifier = Modifier.constrainAs(text){
@@ -180,9 +179,9 @@ val guideline = createGuidelineFromStart(fraction = 0.5f)
                 })
 ```
 
+
 - preferredWrapContent 被constraints限制
 
-- wrapContent 无视constraints
 
 - fillToConstraints 充满constraints中的宽\高
 
@@ -191,6 +190,7 @@ val guideline = createGuidelineFromStart(fraction = 0.5f)
 - value 固定值，可以超过constraints
 
 `width = Dimension.preferredWrapContent.atLeast(100.dp)`
+- wrapContent 无视constraints
 
 (6)、抽象解耦
 
@@ -200,20 +200,20 @@ fun decoupled(margin:Dp):ConstraintSet{
         val button = createRefFor("button")
         val text = createRefFor("text")
 
-        constrain(button){
             top.linkTo(parent.top,margin)
         }
 
         constrain(text){
             top.linkTo(button.bottom,margin)
         }
-    }
 }
 
+constrain(button){
 ConstraintLayout(decoupled(16.dp)) {
                     Button(onClick = { /*TODO*/ },modifier = Modifier.layoutId("button")) {
                         Text(text = "bt3")
                     }
                     Text(text = "tv3",modifier = Modifier.layoutId("text"))
                 }
+              }
 ```
