@@ -23,7 +23,7 @@ LoadFactor：负载因子，默认0.75
 
 ### hash算法
 
-`hash = key.hashcode() ^ key.hashcode() >>> 16`
+`hash = key.hashcode() ^ key.hashcode() >>> 16`  
 `index = hash & (size - 1)`
 
 - 为什么要右移16位？
@@ -80,14 +80,20 @@ get 方法是非常高效的，因为整个过程都不需要加锁。
 如果桶中存在这样的节点，给节点上锁，用synchronized的方式写入。
 
 
+# LinkedHashMap
 
-#LinkedHashMap
-HashMap额外维护了一个双向链表，记录插入顺序。
-## 使用
-accessOrder设为false，按插入顺序排序，最先插入的在头部，最后插入的在尾部。
+直接继承了HashMap，比HashMap多了head、tail、accessorder。
 
-accessOrder设为true，按插入访问顺序排序，最先插入的在头部，最后插入的在尾部,使用get或put会将元素放到队尾。
-## 源码
-LinkedHashMap继承于HashMap，额外多了双向链表头节点属性header，和标志位accessOrder。
+- head 记录头节点
+- tail 记录尾结点
+- accessorder 访问顺序，true:按访问顺序排序，false：按插入顺序排序
 
-它重新定义了Entry键，额外多了befor、after来维护LinkedHashMap中的双向链表（记录插入顺序）；特别注意next是用来记录各个桶中的Entry的连接顺序。都作用于Entry，但互不影响。
+节点Entry<K,V>也是直接继承HashMap的Node，多了before和after的引用。  
+
+- **next**记录的是桶中的Entry顺序。
+- before和after用于维护双向链表，记录Entry的插入顺序。
+
+## accessorder
+
+当为true时，get方法会将当前结点从链表中移除，然后插入到尾部。
+可以实现LRU缓存。

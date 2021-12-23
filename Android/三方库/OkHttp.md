@@ -55,7 +55,7 @@ fun getResponseWithInterceptorChain(): Response {
     }
     //添加请求拦截器
     interceptors += CallServerInterceptor(forWebSocket)
-    
+
     //创建责任链
     val chain = RealInterceptorChain(interceptors, transmitter, null, 0, originalRequest, this,
         client.connectTimeoutMillis, client.readTimeoutMillis, client.writeTimeoutMillis)
@@ -76,15 +76,15 @@ fun getResponseWithInterceptorChain(): Response {
 
 ### 拦截器分类
 
-#### 1.应用拦截器    
+#### 1.应用拦截器   
 
 拿到的是原始请求，可以添加一些自定义header、通用参数、参数加密、网关接入等等。  
 
-#### 2.RetryAndFollowUpInterceptor   
+#### 2.RetryAndFollowUpInterceptor  
 
 处理错误重试和重定向。
 
-#### 3.BridgeInterceptor 
+#### 3.BridgeInterceptor
 
 主要工作是为请求添加cookie、添加固定的header，比如Host、Content-Length、Content-Type、User-Agent等等，然后保存响应结果的cookie，如果响应使用gzip压缩过，则还需要进行解压。
 
@@ -113,4 +113,14 @@ OKHttp默认只支持get请求的缓存,使用request URL作为缓存的key.
 最后，从使用场景看，应用拦截器因为只会调用一次，通常用于统计客户端的网络请求发起情况；而网络拦截器一次调用代表了一定会发起一次网络通信，因此通常可用于统计网络链路上传输的数据。
 
 
-  
+## HTTP2
+
+### 二进制
+
+HTTP/1 和 HTTP/2 的主要区别之一，就是 HTTP/2 是一个二进制、基于数据报的协议，而 HTTP/1 是完全基于文本的，基于文本的协议方便人类阅读，但是机器解析起来比较困难。
+
+### 多路复用
+
+HTTP/1 是一种同步的、独占的请求—响应协议，客户端发送 HTTP/1 消息，然后服务器返回 HTTP/1 响应，为了能更快地收发更多数据，HTTP/1 的解决办法就是打开多个连接，并且使用资源合并，以减少请求数，但是这种解决办法会引入其他问题和带来性能开销。
+
+而 HTTP/2 允许在单个连接上同时执行多个请求，每个 HTTP 请求或响应使用不同的流，以流的方式多路复用。
