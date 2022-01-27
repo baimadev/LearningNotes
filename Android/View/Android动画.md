@@ -1,5 +1,5 @@
 [View动画](#1)   
-[属性动画](#2) 
+[属性动画](#2)
 
 
 # 动画
@@ -68,7 +68,7 @@
                 TODO("Not yet implemented")
             }
         })
-        
+
 ```
 
 <h3 id="2"></h3>
@@ -118,7 +118,7 @@ ObjectAnimator参数包好一个对象和对象的属性名字，但这个属性
                 TODO("Not yet implemented")
             }
         })
-        
+
         //可选择想要的监听
         animator.addListener(object: AnimatorListenerAdapter() {
 
@@ -129,8 +129,21 @@ ObjectAnimator参数包好一个对象和对象的属性名字，但这个属性
 
 ```
 
+### Interpolator
+
+根据时间计算属性变化的百分比。
+
+常用插值器：
+
+- LinearInterpolator（@android:anim/linear_interpolator，线性插值器，匀速动画）
+- AccelerateDecelerateInterpolator（@android:anim/accelerate_decelerate_interpolator，加速减速插值器，动画两头慢中间快）  
+- AccelerateInterpolator（@android:anim/accelerate_interpolator，加速插值器，动画越来越快）
+- DecelerateInterpolator（@android:anim/decelerate_interpolator，减速插值器，动画越来越慢）
+- BounceInterpolator（@android:anim/bounce_interpolator，动画结束的时候弹起）
 
 ### ValueAnimator
+
+估值器：根据插值器算出来的属性变化百分比来计算具体变化的值。
 
 本身不提供动画效果，更像一个数值发生器，用来产生具有一定规律的数字。
 
@@ -138,7 +151,7 @@ ObjectAnimator参数包好一个对象和对象的属性名字，但这个属性
  val animator = ValueAnimator.ofFloat(0f,100f)
         animator.setTarget(tu)
         animator.setDuration(1000)
-        animator.addUpdateListener { 
+        animator.addUpdateListener {
             val value = it.animatedValue as Float
             //TODO use the value
         }
@@ -159,17 +172,8 @@ ObjectAnimator参数包好一个对象和对象的属性名字，但这个属性
         }
         animator.interpolator = BounceInterpolator()//动画结束时回弹
         animator.start()
-       
+
 ```
-
-常用插值器：
-
-- LinearInterpolator（@android:anim/linear_interpolator，线性插值器，匀速动画）
-- AccelerateDecelerateInterpolator（@android:anim/accelerate_decelerate_interpolator，加速减速插值器，动画两头慢中间快）  
-- AccelerateInterpolator（@android:anim/accelerate_interpolator，加速插值器，动画越来越快）
-- DecelerateInterpolator（@android:anim/decelerate_interpolator，减速插值器，动画越来越慢）
-- BounceInterpolator（@android:anim/bounce_interpolator，动画结束的时候弹起）
-
 
 
 ### AnimatorSet
@@ -195,7 +199,7 @@ ObjectAnimator参数包好一个对象和对象的属性名字，但这个属性
     android:valueTo="2.0"
     android:valueType="floatType"
     >
-    
+
 
 </objectAnimator>
 
@@ -204,4 +208,3 @@ ObjectAnimator参数包好一个对象和对象的属性名字，但这个属性
         anim.start()
 
 ```
-

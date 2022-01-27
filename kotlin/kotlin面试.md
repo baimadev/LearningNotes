@@ -5,10 +5,10 @@
 因为它也编译成jvm字节码。把它直接编译成字节码有助于实现更快的编译时间且对于jvm而言和java无差异。
 
 ### 3.kotlin如何处理空指针异常？
-处理空指针异常 
+处理空指针异常
 
 ```kotlin
-val l: Int = if (b != null) b.length else -1 
+val l: Int = if (b != null) b.length else -1
 //可替换为
 val l = b?.length ?: -1
 ```
@@ -38,7 +38,7 @@ Val是在运行时被设置， 加一个const 修饰符在val上将会变成编�
 
 ### 6.kotlin默认的可见修饰符
 public（java是default，当前类和同一个包中的类能访问）
- 
+
 ### 7.data class
 会自动生成getter setter hash copy toString componentN（解构，给多个变量赋值）函数。
 
@@ -54,7 +54,7 @@ lateinit:
 - 在调用lateinit修饰的变量时，如果变量还没有初始化，则会抛出未初始化异常，报错
 
 lazy:
- 
+
  - lazy只能对常量val使用，不能修饰变量var
  - lazy的加载时机为第一次调用常量的时候，且只会加载一次（毕竟是个常量，只能赋值一次）
  - 底层实现是单例模式，可选参数 线程安全、同步锁、非线程安全模式。
@@ -72,8 +72,18 @@ lazy:
 companion object，全局只有一个单例。它需要声明在类的内部，在类被装载时会被初始化。
 
 
-### 12.作用域函数
+### 12.JvmOverloads
 
-| -- | -- |  
-| sd | ds |  
-|sd|ds|
+在有默认参数值的方法中使用@JvmOverloads注解，则Kotlin就会暴露多个重载方法。
+
+```java
+
+@JvmOverloads
+fun f(a: String, b: Int=0, c:String="abc"){
+}
+
+//相当于java
+void f(String a)
+void f(String a, int b)
+void f(String a, int b, String c)
+```

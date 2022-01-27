@@ -1,7 +1,7 @@
 
 
 [IntentFlag启动模式](#1)   
-[IntentFilter匹配规则](#2) 
+[IntentFilter匹配规则](#2)
 
 <h3 id="1"></h3>
 
@@ -32,6 +32,29 @@
 A并不会调用onStop。
 
 - 4.从透明Activity B返回A。 B.onPause() -> A.onResume() -> B.onStop()-> B.onDestory()
+
+- 5.横竖屏切换  
+
+横屏启动：
+
+onCreate -->onStart-->onResume
+
+切换竖屏：
+
+onPause -->onSaveInstanceState -->onStop -->onDestroy -->onCreate-->onStart -->onRestoreInstanceState-->onResume -->onPause -->onStop -->onDestroy
+
+设置了configChanges属性为orientation之后：  
+
+Android 8.0 只是回调了onConfigurationChanged方法，并没有走Activity的生命周期方法。
+
+### onNewIntent调用时机
+
+在该Activity的实例已经存在于Task和Back stack中(或者通俗的说可以通过按返回键返回到该Activity )时,当使用intent来再次启动该Activity的时候,如果此次启动不创建该Activity的新实例,则系统会调用原有实例的onNewIntent()方法来处理此intent.
+
+## Intent限制
+
+传输大小为1M左右。  
+解决办法：1、使用Bundle；2、内存共享；3、文件共享。
 
 
 ## IntentFlag启动模式
@@ -83,14 +106,24 @@ http://www.axe.com:500/profile/info
 
  "*"匹配任意多次 "."匹配任意字符 “//”转义需要转两次
 
-表示匹配 http 以 “.pdf” 结尾的路径： 
-``` <data android:scheme="http" android:pathPattern=".*//.pdf"></data>  ```
+表示匹配 http 以 “.pdf” 结尾的路径：
+
+```java
+ <data android:scheme="http" android:pathPattern=".*//.pdf"></data>
+
+```
 
 匹配URI和MIME：
-``` intent.setDataAndType(Uri.parse("axe://www.axe.com:8888/mypath"),"axe/abc"); ```
+
+```java
+intent.setDataAndType(Uri.parse("axe://www.axe.com:8888/mypath"),"axe/abc");
+```
 
 Scheme的默认值content 和 file：
-```intent.setDataAndType(Uri.parse("file://axe"),"image/png"); ```
+
+```java
+intent.setDataAndType(Uri.parse("file://axe"),"image/png");
+```
 
 ### 4.多组IntentFilter
 
@@ -100,4 +133,3 @@ Scheme的默认值content 和 file：
 
  - 清单文件中Activity必须配置Action和Category
  - 即时action和category通过了，data不通过也不能匹配成功
-

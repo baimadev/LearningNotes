@@ -6,17 +6,17 @@
 [WebSettings](#5)  
 [WebClient](#6)  
 [WebChromeClient](#7)  
- 
+
 <h3 id="1"></h3>
 
 ## 基本使用
 显示网页：  
- 
+
  `webView.loadUrl("http://www.baidu.com");`  
 
 默认使用手机浏览器打开网页,为了能够直接通过WebView显示网页，则必须设置:
 
-```kotlin 
+```kotlin
 webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
@@ -206,3 +206,31 @@ webView.webViewClient = object : WebViewClient() {
 
 
 ```
+
+### Android调用JS
+
+webview.evaluateJavaScript())
+
+## JS调用Android
+
+### JavaScriptInterface
+
+- 定义被调用的方法,并添加@JavaScriptInterface注解  
+
+```java
+ @JavascriptInterface
+ public void hello(String msg) {
+     Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+ }
+```
+
+- 给WebView绑上对象  
+  `webView.addJavascriptInterface(this, "justTest");`
+- JS调用方法  
+  `<button onclick="justTest.hello('js调用安卓方法！')">调用安卓方法</button>`
+
+### shouldOverrideUrlLoading
+
+通过重新WebView的shouldOverrideUrlLoading方法，JS请求时，拦截其请求路径，根据路径调用Android方法。
+
+也可以通过拦截alert方法，判断message来调用Android方法。

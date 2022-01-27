@@ -19,18 +19,20 @@ private val runningSyncCalls = ArrayDeque<RealCall>()
 ```
 Note：为什么不使用LinkedList？因为LinkedList内存不连续，查找起来慢。
 
-当有新的请求入队和当前请求完成后，且runningAsyncCalls有空位时，将任务加进去，并从readyAsyncCalls中删除，最后交到线程池中去执行。
+放入运行时队列条件：当前请求数量小于64,单个host支持的最大并发量5.
 
-## 线程池
+放入时机：当有新的请求入队和当前请求完成后会调用finish，并从readyAsyncCalls中添加新的任务到运行时队列，最后交到线程池中去执行。
+
+### 线程池
 
 ```java
 executorServiceOrNull = ThreadPoolExecutor(0, Int.MAX_VALUE, 60, TimeUnit.SECONDS,
         SynchronousQueue(), threadFactory("OkHttp Dispatcher", false))
   }
 ```
-核心线程数0，非核心线无穷大，阻塞队列SynchronousQueue(当添加一个元素时，必须等待一个消费线程取出它，否则一直阻塞)，实际上这个线程池就是newCacheThreadPool，短时间内可创建无限多的线程。  
+核心线程数0，非核心线无穷大，阻塞队列SynchronousQueue(当添加一个元素时，必须等待一个消费线程取出它，否则一直阻塞)。  
+实际上这个线程池就是newCacheThreadPool，短时间内可创建无限多的线程，保障最大吞吐量。  
 
-但OkHttp设置了默认的最大并发请求量 maxRequests = 64（runningAsyncCalls最大容量） 和单个host支持的最大并发量 maxRequestsPerHost = 5。
 
 ## 拦截器
 
@@ -83,20 +85,24 @@ fun getResponseWithInterceptorChain(): Response {
 #### 2.RetryAndFollowUpInterceptor  
 
 处理错误重试和重定向。
+内部是个死循环，抛出IO或Route异常时就会重新执行，执行重试操作。
+获取到Response后会根据响应码处理30X重定向（拿到响应头中的Location 的url，然后重新创建Request，发起请求）。
 
 #### 3.BridgeInterceptor
 
-主要工作是为请求添加cookie、添加固定的header，比如Host、Content-Length、Content-Type、User-Agent等等，然后保存响应结果的cookie，如果响应使用gzip压缩过，则还需要进行解压。
+主要工作是为请求添加cookie、添加固定的header，比如Host、Connection、Content-Length、Content-Type、User-Agent等等，然后保存响应结果的cookie，如果响应使用gzip压缩过，则还需要进行解压。
 
 #### 4.CacheInterceptor
 
 缓存拦截器，如果命中缓存则不会发起网络请求。  
 OKHttp默认只支持get请求的缓存,使用request URL作为缓存的key.  
-实现原理是Http的Etag & If-None-Match：服务器生成Etag返回给客户端，客户端发起第二次请求时发送一个If-None-Match，而它的值就是Etag的值。然后，服务器会比对这个客服端发送过来的Etag是否与服务器的相同，如果相同，就将If-None-Match的值设为false，返回状态为304，客户端继续使用本地缓存，不解析服务器返回的数据；如果不相同，就将If-None-Match的值设为true，返回状态为200，客户端重新解析服务器返回的数据
+实现原理是Http的Etag & If-None-Match：服务器生成Etag返回给客户端，客户端发起第二次请求时发送一个If-None-Match，而它的值就是Etag的值。然后，服务器会比对这个客服端发送过来的Etag是否与服务器的相同，如果相同，就将If-None-Match的值设为false，返回状态为304，客户端继续使用本地缓存，不解析服务器返回的数据；如果不相同，就将If-None-Match的值设为true，返回状态为200，客户端重新解析服务器返回的数据。
 
 #### 5.ConnectInterceptor
 
 连接拦截器，内部会维护一个连接池，负责连接复用、创建连接（三次握手等等）、释放连接以及创建连接上的socket流。
+默认最多五个闲置连接，闲置连接最大存活时间5min。  
+第一次向连接池中put socket时，便会开启一个清理任务，该任务会将存活时间超过5min的闲置连接remove，或者当前闲置连接数超过5个时，会remove闲置最久的那个连接。
 
 #### 6.networkInterceptors（网络拦截器）  
 

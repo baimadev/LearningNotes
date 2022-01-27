@@ -23,7 +23,7 @@ Looper的loop方法 是一个死循环  它不断的从MessageQueue中来获取�
 - 1、Handler的构造方法有个async参数，设为true。
 - 2、在创建Message对象时，直接调用Message的setAsynchronous()方法。
 
-同步屏障就是为了确保异步消息的优先级，设置了屏障后，只能处理其后的异步消息，同步消息会被挡住，除非撤销屏障。
+同步屏障就是为了确保异步消息的优先级，设置了屏障后，只能处理其后的异步消息，同步消息会被挡住，除非撤销屏障。屏幕刷新信号VSYNC就是异步消息，同步屏障可以保障屏幕刷新的优先级，所以有再多的耗时同步消息也不会影响UI的刷新操作。
 
 同步屏障是通过MessageQueue.postSyncBarrier方法开启的。  
 同步屏障的移除是在MessageQueue.removeSyncBarrier()方法。
@@ -35,6 +35,43 @@ Looper的loop方法 是一个死循环  它不断的从MessageQueue中来获取�
 
 解决：静态内部类，静态内部类不会被当前这个类所引用，再使用弱引用，gc触发时将handler中的activity回收。
 
+## Looper中有死循环，为什么没有阻塞主线程
+
+队列中没有消息时，线程会释放资源进入休眠状态；当有消息写入时，会唤醒线程。  
+
+主要是通过Linux的管道机制实现线程的阻塞和唤醒。管道读写分离，一个线程从管道一端读取数据，没有数据进入等待状态；另一个线程向管道中写入数据，写入时如果另一端有线程正在等待，就唤醒线程。
+
+### 为什么UI没有卡顿？
+
+系统会每隔16.6ms会发送一个vSync信号，去唤醒UI线程；Android不止一个屏幕刷新信号，比如输入法和广播也会唤醒主线程，
+所以主线程是随时挂起，随时被阻塞的。
+
+界面刷新的本质流程：
+
+- 通过ViewRootImpl的scheduleTraversals()进行界面的三大流程。
+- 调用到scheduleTraversals()时不会立即执行，而是将该操作保存到待执行队列中。并给底层的刷新信号注册监听。
+- 当VSYNC信号到来时，会从待执行队列中取出对应的scheduleTraversals()操作，并将其加入到主线程的消息队列中。
+- 主线程从消息队列中取出并执行三大流程: onMeasure()-onLayout()-onDraw()
+
+同步屏障保障屏幕刷新优先级。
 
 
+## callback & runnable & message
 
+```java
+public void dispatchMessage(@NonNull Message msg) {
+    if (msg.callback != null) {
+        handleCallback(msg);
+    } else {
+        if (mCallback != null) {
+            if (mCallback.handleMessage(msg)) {
+                return;
+            }
+        }
+        handleMessage(msg);
+    }
+}
+```
+post(runnable)最后也会封装成message，最后执行message.callback方法。    
+
+如果handler设置了Callback，并且返回了true就不会在执行hadleMessage()了。返回了false表示不拦截，则callback和handleMessage都会执行。
