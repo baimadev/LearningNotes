@@ -56,6 +56,6 @@ AMS通过ActivityRecord来维护Activity运行时的状态信息，需要将Acti
 ## Instrumentation
  Instrumentation可以理解为应用进程的管家，ActivityThread要创建或暂停某个Activity时，都需要通过Instrumentation来进行具体的操作。
 
-- AMS通过Binder通知ApplicationThrea
+- AMS通过Binder通知ApplicationThread
 - ApplicationThread通过Handler通知ActivityThread
 - ActivityThread通过Instrumentation做具体的操作

@@ -87,3 +87,85 @@ void f(String a)
 void f(String a, int b)
 void f(String a, int b, String c)
 ```
+### 13.构造函数
+
+满足两个规则：
+1.次级构造函数必须调用主构造函数；
+2.子类构造函数必须调用父类构造函数。
+
+### 14.inline
+- 编译器做的优化，实际上是把函数体复制到调用处  
+- 未内联的情况下，整个执行过程中会产生两个方法栈帧，每一个方法栈帧都包括了 局部变量表、操作数栈、动态连接、方法返回地址和一些额外的附加信息 。  
+- 使用内联的情况下，只需要一个方法栈帧，降低了方法调用的成本
+- 普通方法没必要使用内联，当方法参数为lambda时，且调用方法时传入的lambda代码块中还含有外部变量,最好使用内联。
+
+
+### noinline
+
+一个高阶函数一旦被标记为内联，它的方法体和所有 Lambda 参数都会被内联。
+
+但是由于我要传入的 block1  代码块巨长(或者其他原因)，我并不想将其内联，这时候就要使用 noinline 。
+
+### crossinline
+
+首先，普通的 lambda 是不允许直接使用 return 的。  
+
+而inline可以让我们突破这个限制。
+
+```java  
+
+inline fun runCatch(block: () -> Unit) {
+    try {
+        print("before lambda")
+        block()
+        print("after lambda")
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+fun run() {
+    runCatch { return }
+}
+
+```
+这种返回称为非局部返回。
+
+如果想仅仅退出 Lambda 的运行，就可以这样写。
+
+```java  
+
+inline fun runCatch(block: () -> Unit) {
+    try {
+        print("before lambda")
+        block()
+        print("after lambda")
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+fun run() {
+    // 从 lambda 中返回
+    runCatch { return@runCatch }
+}
+
+```
+这样的场景叫做局部返回。
+
+crossinline 可以阻止非局部返回，但并不能阻止局部返回。
+
+### 协程
+本质上还是通过线程去执行任务，是kotlin提供的语法糖，协程任务可以在线程中串行执行，可以挂起也可以主动恢复，不会阻塞线程。是编译器的小把戏，通过插入代码，通过任务调度运行在同一个线程中。
+
+解决了回调嵌套的问题，可以用同步的方式写异步代码；切换线程也方便
+
+runBlocking可以阻塞线程。
+
+suspend修饰的方法会挂起所在的协程。
+
+协程挂起后再恢复，不一定运行在原来的线程，通过协程调度器和后台线程池决定，但是调度器能够保证它的执行顺序。
+
+协程作用域：管理协程的生命周期。
+
+协程作用域内部的取消是默认是双向的。父协程< == >子协程。

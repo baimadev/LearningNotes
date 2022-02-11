@@ -8,10 +8,3 @@
 - 不适用于立即执行或需要在准确时间执行的任务。（应该使用AlarmManager）
 
 ## why use workmanager
-
-?memberInfoPhysicalCardGuid=
-6802947356393209856&
-phone=15281170270&
-
-cardNum":"AN1234567003","cardGuid":
-"6802947356393209856",
