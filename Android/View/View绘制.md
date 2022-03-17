@@ -54,5 +54,4 @@ ViewGroup的onLayout实现思路：
 
 第五步：drawDefaultFocusHighlight(canvas)：绘制默认焦点高亮
 
-
 ![](../img/viewdraw.png)

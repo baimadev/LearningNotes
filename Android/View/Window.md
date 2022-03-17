@@ -12,7 +12,7 @@ WindowManagerGlobal是一个全局单例。它得addView做了以下操作：
 
 - 新建viewRootImpl对象，并把view、viewRootImpl、params三个对象添加到三个list中进行保存
 
-每一个window所对应的这三个对象都会保存在WindowManGlobal中，之后对window的一些操作就可以直接来这里取对象了。当window被删除的时候，这些对象也会被从list中移除。
+每一个window所对应的这三个对象都会保存在WindowManagerGlobal中，之后对window的一些操作就可以直接来这里取对象了。当window被删除的时候，这些对象也会被从list中移除。
 
 - 通过ViewRootImpl去添加view
 
@@ -39,11 +39,11 @@ PhoneWindow并不是view容器，而是window容器。那PhoneWindow的存在意
 
 - 抽离Activity中关于window的逻辑。
 
-- 限制组件添加window的权限。PhoneWindow内部有一个token属性，用于验证一个PhoneWindow是否允许添加window。在Activity创建PhoneWindow的时候，就会把从AMS传过来的token赋值给他，从而他也就有了添加token的权限。
+- 限制组件添加window的权限。PhoneWindow内部有一个token属性，用于验证一个PhoneWindow是否允许添加window。在Activity创建PhoneWindow的时候，就会把从AMS传过来的token赋值给他，从而他也就有了添加window的权限。
 
 ### Activity创建PhoneWindow
 
-在Activity创建过程中（具体在attach方法）会创建PhoneWindow、WindowManagerImpl，并将它两绑定在一起。Activity就可以通过WindowManager来操作PhoneWindow了。
+在Activity创建过程中（具体在attach方法）会创建PhoneWindow、WindowManagerImpl，并将它两绑定在一起。Activity就可以通过PhoneWindow来操作WindowManager了。
 
 调用Activity.setContentView：
   - PhoneWindow.setContentView：

@@ -15,6 +15,9 @@
 
 (2)、attachApplicationLocked()通过主线程Handler通知创建Activity对象，然后再调用onCreate()。
 
+![..img/app_launch.png](../img/app_launch.png)
+
+
 ## init进程
 
 Android手机开机Linux内核启动后，启动init进程。  
