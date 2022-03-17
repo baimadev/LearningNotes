@@ -12,7 +12,7 @@ key值按升序排列。
 - mHashes[]：存放key值计算出的hash，升序排列。
 - mArray[]：存放key和value，key就是 index\*2 ，value 就是index\*2+1  
 
-put操作也是使用二分法查找下标
+put操作也是使用二分法查找下标：先计算key的hash值，在用二分查找mHashs数组，得到对应的下标。
 
 ![](./img/arraymap.png)
 

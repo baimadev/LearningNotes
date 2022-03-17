@@ -24,7 +24,7 @@
 
 能获取真实 view 宽高的方法：
 
-- Activity/View 的 onWindowFocusChanged 方法: 方法含义是 View 已经初始完毕，宽高已经准备好了, 得到焦点和失去焦点会被多次调用
+- Activity的 onWindowFocusChanged 方法: 方法含义是窗口得到焦点时View 已经初始完毕，宽高已经准备好了, 得到焦点和失去焦点会被多次调用
 - view.post：将 Runnable 投递到消息队列的尾部，当执行到的时候，view 已经初始化好了
 - ViewTreeObserver: 使用 ViewTreeObserver 众多回调可以完成这功能，比如 onGlobalLayoutListener，会调用多次
 - view.addOnLayoutChangeListener
@@ -51,23 +51,6 @@ View.inflate实际上最终调用的还是LayoutInflater.inflate(@LayoutRes int 
 
 重写Fragment的setUserVisibleHint()，判断Fragment可见的时候加载数据。
 
-
-{
-        "printKey": "6500313931326685185",
-        "printerType": 1,
-        "printerIp": "192.168.102.140",
-        "printerPort": 9100,
-        "pageSize": "80",
-        "printTimes": 1,
-        "printRows": [
-               {
-                "contentType": "BlankRow",
-                "blankRow":{
-                      "lineNumber":4
-                }
-            }
-        ]
-    }
 
 ## 滑动冲突
 
